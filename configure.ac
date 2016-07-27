@@ -1,0 +1,8 @@
+AC_INIT([memSIM2], [0.1])
+AC_CONFIG_SRCDIR([src/main.c])
+AM_INIT_AUTOMAKE
+AC_CONFIG_HEADERS([config.h])
+AC_PROG_CC_STDC
+
+AC_CONFIG_FILES([Makefile src/Makefile])
+AC_OUTPUT
