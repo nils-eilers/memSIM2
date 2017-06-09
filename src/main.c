@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+#include <strings.h>
 #include <poll.h>
 #include <stdint.h>
 #include <parse_ihex.h>
@@ -109,14 +110,14 @@ read_image(const char *filename, uint8_t *mem, size_t mem_size, long offset)
     return -1;
   }
   suffix++;
-  if (strcmp(suffix, "ihx") == 0 || strcmp(suffix, "IHX") == 0) {
+  if (strcasecmp(suffix, "IHX") == 0) {
     unsigned int min;
     unsigned int max;
     if (parse_ihex(file, mem, mem_size, &min, &max) < 0) {
       fclose(file);
       return -1;
     }
-  } else if (strcmp(suffix, "bin") == 0 || strcmp(suffix, "BIN") == 0) {
+  } else if (strcasecmp(suffix, "BIN") == 0) {
     if (read_binary(file, mem, mem_size, offset) < 0) {
       fclose(file);
       return -1;

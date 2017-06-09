@@ -5,4 +5,5 @@ AC_CONFIG_HEADERS([config.h])
 AC_PROG_CC_STDC
 
 AC_CONFIG_FILES([Makefile src/Makefile])
+AC_CHECK_FUNCS([strcasecmp])
 AC_OUTPUT
