@@ -24,7 +24,7 @@ serial_open(const char *device)
   int fd;
   fd = open(device, O_RDWR);
   if (fd < 0) {
-    perror("open failed");
+    perror(device);
     return -1;
   }
   if (ioctl(fd, TCGETS2, &settings) < 0) {
