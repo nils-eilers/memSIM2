@@ -72,7 +72,7 @@ alternative, you may log out and in again.
 Usage
 -----
 
-	memSIM2 -h
+	memsim2 -h
 
 gives this help text:
 

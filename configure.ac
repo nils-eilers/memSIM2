@@ -1,4 +1,4 @@
-AC_INIT([memSIM2], [0.1])
+AC_INIT([memsim2], [0.1])
 AC_CONFIG_SRCDIR([src/main.c])
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([config.h])

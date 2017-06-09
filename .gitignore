@@ -17,4 +17,5 @@ src/Makefile.in
 *.o
 *~
 src/memSIM2
+src/memsim2
 stamp-h1

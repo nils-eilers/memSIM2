@@ -2,9 +2,9 @@ SUBDIRS=
 
 AM_CFLAGS = 
 
-bin_PROGRAMS = memSIM2
+bin_PROGRAMS = memsim2
 
-memSIM2_SOURCES = main.c \
+memsim2_SOURCES = main.c \
 parse_ihex.c parse_ihex.h
 
-memSIM2_LDADD=
+memsim2_LDADD=
