@@ -110,7 +110,7 @@ read_image(const char *filename, uint8_t *mem, size_t mem_size, long offset)
     return -1;
   }
   suffix++;
-  if (strcasecmp(suffix, "IHX") == 0) {
+  if (strcasecmp(suffix, "HEX") == 0) {
     unsigned int min;
     unsigned int max;
     if (parse_ihex(file, mem, mem_size, &min, &max) < 0) {
@@ -123,7 +123,7 @@ read_image(const char *filename, uint8_t *mem, size_t mem_size, long offset)
       return -1;
     }
   } else {
-    fprintf(stderr, "Unknown suffix (no .ihx or .bin)\n");
+    fprintf(stderr, "Unknown suffix (no .hex or .bin)\n");
     fclose(file);
     return -1;
   }
