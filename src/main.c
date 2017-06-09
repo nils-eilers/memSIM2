@@ -62,7 +62,7 @@ usage(void)
 	"\t-e            Enable emulation\n"
 	"\t-h            This help\n",
 	stderr);
-	
+
 }
 
 static int
@@ -89,7 +89,7 @@ read_binary(FILE *file, uint8_t *mem, size_t mem_size, long offset)
     perror("Failed to read from binary file\n");
     return -1;
   }
-  
+
   return 0;
 }
 
@@ -252,9 +252,9 @@ main(int argc, char *argv[])
     case '?':
       return EXIT_FAILURE;
     }
-    
+
   }
-  
+
   fd = serial_open(device);
   if (fd < 0) return EXIT_FAILURE;
 
@@ -275,7 +275,7 @@ main(int argc, char *argv[])
   emu_reply[16] = '\0';
   printf("Reply: %s\n", emu_reply);
 #endif
-  
+
   /* Configuration */
   snprintf(emu_cmd, sizeof(emu_cmd), "MC%c%c%03d%c%c00023\r\n",mem_type->cmd,reset_enable, reset_time,emu_enable, selftest);
 #if DEBUG
@@ -313,7 +313,7 @@ main(int argc, char *argv[])
     }
 
     snprintf(emu_cmd, sizeof(emu_cmd), "MD%04ld00000058\r\n",mem_type->size / 1024);
-#ifdef DEBUG   
+#ifdef DEBUG
     fprintf(stderr, "Data: %s\n", emu_cmd);
 #endif
     fprintf(stderr, "Writing %ld bytes to simulator...\n", mem_type->size);
@@ -327,7 +327,7 @@ main(int argc, char *argv[])
       close(fd);
       return EXIT_FAILURE;
     }
-  
+
     res = read_all(fd, (uint8_t*)emu_reply, 16, 15000);
     if (res == 0) {
       fprintf(stderr, "Timeout while waiting for write operation\n");

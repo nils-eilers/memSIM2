@@ -1,7 +1,7 @@
 #include "parse_ihex.h"
 #include "ctype.h"
 
-static void 
+static void
 skip_white(FILE *file)
 {
   int ch;
@@ -80,7 +80,7 @@ parse_ihex(FILE *file, uint8_t *buffer, unsigned int size,
 	if (addr < *min) *min = addr;
 	addr++;
       }
-      
+
     } else if (type == 1) {
       return 0;
     }
