@@ -73,20 +73,20 @@ read_binary(FILE *file, uint8_t *mem, size_t mem_size, long offset)
   if (offset > 0) {
     res = fseek(file, offset, SEEK_SET);
     if (res < 0) {
-      perror("Failed to seek to offset in binary file\n");
+      perror("Error: Failed to seek to offset in binary file\n");
       return -1;
     }
   } else {
     addr = -offset;
   }
   if (addr >= mem_size) {
-    fprintf(stderr,"Offset outside memory");
+    fprintf(stderr,"Error: Offset outside memory");
     return -1;
   }
   mem_size -= addr;
   res = fread(mem + addr, sizeof(uint8_t), mem_size, file);
   if (res < 0) {
-    perror("Failed to read from binary file\n");
+    perror("Error: Failed to read from binary file\n");
     return -1;
   }
 
@@ -99,13 +99,13 @@ read_image(const char *filename, uint8_t *mem, size_t mem_size, long offset)
   char *suffix;
   FILE *file = fopen(filename, "rb");
   if (!file) {
-    fprintf(stderr, "Failed to open file '%s': %s\n",
+    fprintf(stderr, "Error: Failed to open file '%s': %s\n",
 	    filename, strerror(errno));
     return -1;
   }
   suffix = rindex(filename,'.');
   if (!suffix) {
-    fprintf(stderr, "Filename has no suffix\n");
+    fprintf(stderr, "Error: Filename has no suffix\n");
     fclose(file);
     return -1;
   }
@@ -123,7 +123,7 @@ read_image(const char *filename, uint8_t *mem, size_t mem_size, long offset)
       return -1;
     }
   } else {
-    fprintf(stderr, "Unknown suffix (no .hex or .bin)\n");
+    fprintf(stderr, "Error: Unknown suffix (no .hex or .bin)\n");
     fclose(file);
     return -1;
   }
@@ -224,14 +224,14 @@ main(int argc, char *argv[])
 	}
       }
       if (!mem_type) {
-	fprintf(stderr, "Unknown memory type\n");
+	fprintf(stderr, "Error: Unknown memory type\n");
 	return EXIT_FAILURE;
       }
       break;
     case 'r':
       reset_time = atoi(optarg);
       if (reset_time < -255 || reset_time > 255) {
-	fprintf(stderr, "Reset time out of range\n");
+	fprintf(stderr, "Error: Reset time out of range\n");
 	return EXIT_FAILURE;
       }
       if (reset_time == 0) {
@@ -287,12 +287,12 @@ main(int argc, char *argv[])
   }
   res = read_all(fd, (uint8_t*)emu_reply, 16, 5000);
   if (res == 0) {
-    fprintf(stderr, "Timeout while waiting for configuration reply\n");
+    fprintf(stderr, "Error: Timeout while waiting for configuration reply\n");
     close(fd);
     return EXIT_FAILURE;
   }
   if (res != 16) {
-    perror("Failed to read configuration reply");
+    perror("Error: Failed to read configuration reply");
     close(fd);
     return EXIT_FAILURE;
   }
@@ -301,7 +301,7 @@ main(int argc, char *argv[])
   printf("Reply: %s\n", emu_reply);
 #endif
   if (memcmp(emu_cmd, emu_reply, 8) != 0) {
-    fprintf(stderr, "Response didn't match command\n");
+    fprintf(stderr, "Error: Response didn't match command\n");
     close(fd);
     return EXIT_FAILURE;
   }
@@ -319,23 +319,23 @@ main(int argc, char *argv[])
     fprintf(stderr, "Writing %ld bytes to simulator...\n", mem_type->size);
     res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1);
     if (res != sizeof(emu_cmd) - 1) {
-      perror("Failed to write data header");
+      perror("Error: Failed to write data header");
     }
     res = write_all(fd, mem, mem_type->size);
     if (res < 0) {
-      perror("Failed to write data");
+      perror("Error: Failed to write data");
       close(fd);
       return EXIT_FAILURE;
     }
 
     res = read_all(fd, (uint8_t*)emu_reply, 16, 15000);
     if (res == 0) {
-      fprintf(stderr, "Timeout while waiting for write operation\n");
+      fprintf(stderr, "Error: Timeout while waiting for write operation\n");
       close(fd);
       return EXIT_FAILURE;
     }
     if (res != 16) {
-      perror("Failed to read data reply");
+      perror("Error: Failed to read data reply");
       close(fd);
       return EXIT_FAILURE;
     }
@@ -344,7 +344,7 @@ main(int argc, char *argv[])
     printf("Reply: %s\n", emu_reply);
 #endif
     if (memcmp(emu_cmd, emu_reply, 8) != 0) {
-      fprintf(stderr, "Response didn't match command\n");
+      fprintf(stderr, "Error: Response didn't match command\n");
       close(fd);
       return EXIT_FAILURE;
     }
