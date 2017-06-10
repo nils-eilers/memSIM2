@@ -5,7 +5,6 @@
 #include <stdio.h>
 
 int
-parse_ihex(FILE *file, uint8_t *buffer, unsigned int size,
-	   unsigned int *min, unsigned int *max);
+parse_ihex(FILE *file, uint8_t *buffer, int size, int *min, int *max);
 
 #endif /* __PARSE_IHEX_H__CNXRKTJLF4__ */

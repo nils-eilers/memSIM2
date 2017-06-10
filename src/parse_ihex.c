@@ -22,7 +22,7 @@ get_hex(FILE *file)
 }
 
 static int
-get_hex2(FILE *file, unsigned int *check)
+get_hex2(FILE *file, int *check)
 {
   int v1, v2;
   v1 = get_hex(file);
@@ -35,7 +35,7 @@ get_hex2(FILE *file, unsigned int *check)
 }
 
 static int
-get_hex4(FILE *file, unsigned int *check)
+get_hex4(FILE *file, int *check)
 {
   int v1, v2;
   v1 = get_hex2(file, check);
@@ -46,16 +46,15 @@ get_hex4(FILE *file, unsigned int *check)
 }
 
 int
-parse_ihex(FILE *file, uint8_t *buffer, unsigned int size,
-	   unsigned int *min, unsigned int *max)
+parse_ihex(FILE *file, uint8_t *buffer, int size, int *min, int *max)
 {
   int ch;
   *max = 0;
-  *min = (unsigned int)-1;
+  *min = -1;
 
   while(1) {
-    unsigned int check;
-    unsigned int b;
+    int check;
+    int b;
     int length;
     int addr;
     int type;

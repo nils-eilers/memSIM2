@@ -9,13 +9,20 @@
 #include <strings.h>
 #include <poll.h>
 #include <stdint.h>
-#include <parse_ihex.h>
+#include <limits.h>
+
+#include "parse_ihex.h"
 
 #define BPS 460800
 
 #ifndef BOTHER
 #define    BOTHER CBAUDEX
 #endif
+
+#if (INT_MAX < 2147483647UL)
+#error This code assumes int of at least 32 bit width
+#endif
+
 extern int ioctl(int d, unsigned long request, ...);
 
 static int
@@ -111,9 +118,8 @@ read_image(const char *filename, uint8_t *mem, size_t mem_size, long offset)
   }
   suffix++;
   if (strcasecmp(suffix, "HEX") == 0) {
-    unsigned int min;
-    unsigned int max;
     if (parse_ihex(file, mem, mem_size, &min, &max) < 0) {
+    int min, max;
       fclose(file);
       return -1;
     }
@@ -180,7 +186,7 @@ struct MemType
 {
   const char *name;
   char cmd;
-  unsigned long size;
+  int size;
 };
 
 const struct MemType memory_types[] =
@@ -199,10 +205,10 @@ main(int argc, char *argv[])
 {
   int res;
   int fd;
-  int i;
+  unsigned int i;
   long offset = 0;
   char reset_enable = '0';
-  int reset_time = 100;
+  int8_t reset_time = 100;
   const struct MemType *mem_type = &memory_types[3];
   char emu_enable = 'D';
   char selftest = 'N';
@@ -210,6 +216,7 @@ main(int argc, char *argv[])
   int opt;
   char emu_cmd[16+1];
   char emu_reply[16+1];
+  int value;
   while((opt = getopt(argc, argv, "hd:m:r:e")) != -1) {
     switch(opt) {
     case 'd':
@@ -229,18 +236,20 @@ main(int argc, char *argv[])
       }
       break;
     case 'r':
-      reset_time = atoi(optarg);
-      if (reset_time < -255 || reset_time > 255) {
+      value = atoi(optarg);
+      if (value < -255 || value > 255) {
 	fprintf(stderr, "Error: Reset time out of range\n");
 	return EXIT_FAILURE;
       }
       if (reset_time == 0) {
 	reset_enable = '0';
+        reset_time = 0;
       } else if (reset_time > 0) {
 	reset_enable = 'P';
+        reset_time = value;
       } else {
 	reset_enable = 'N';
-	reset_time = -reset_time;
+        reset_time = -value;
       }
       break;
     case 'e':
@@ -277,7 +286,8 @@ main(int argc, char *argv[])
 #endif
 
   /* Configuration */
-  snprintf(emu_cmd, sizeof(emu_cmd), "MC%c%c%03d%c%c00023\r\n",mem_type->cmd,reset_enable, reset_time,emu_enable, selftest);
+  snprintf(emu_cmd, sizeof(emu_cmd), "MC%c%c%03d%c%c00023\r\n",
+        mem_type->cmd, reset_enable, reset_time, emu_enable, selftest);
 #if DEBUG
   fprintf(stderr, "Config: %s\n", emu_cmd);
 #endif
@@ -312,7 +322,7 @@ main(int argc, char *argv[])
       return EXIT_FAILURE;
     }
 
-    snprintf(emu_cmd, sizeof(emu_cmd), "MD%04ld00000058\r\n",mem_type->size / 1024);
+    snprintf(emu_cmd, sizeof(emu_cmd), "MD%04d00000058\r\n",sim_size / 1024 % 1000);
 #ifdef DEBUG
     fprintf(stderr, "Data: %s\n", emu_cmd);
 #endif
