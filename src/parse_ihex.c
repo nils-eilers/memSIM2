@@ -1,5 +1,7 @@
+#include <ctype.h>
+#include <limits.h>
+
 #include "parse_ihex.h"
-#include "ctype.h"
 
 static void
 skip_white(FILE *file)
@@ -50,7 +52,8 @@ parse_ihex(FILE *file, uint8_t *buffer, int size, int *min, int *max)
 {
   int ch;
   *max = 0;
-  *min = -1;
+  *min = INT_MAX;
+  int actual_size = 0;
 
   while(1) {
     int check;
@@ -77,6 +80,11 @@ parse_ihex(FILE *file, uint8_t *buffer, int size, int *min, int *max)
 	buffer[addr] = v;
 	if (addr > *max) *max = addr;
 	if (addr < *min) *min = addr;
+        actual_size = *max - *min + 1;
+        if (actual_size > size) {
+          fprintf(stderr, "%sData exceeds %d bytes\n", errmsg, size);
+          return -5;
+        }
 	addr++;
       }
 
@@ -87,5 +95,6 @@ parse_ihex(FILE *file, uint8_t *buffer, int size, int *min, int *max)
     if (ch < 0) return ch;
     if ((check & 0xff) != 0) return -3;
   }
-  return 0;
+  printf("Info: Intel hex data from %04Xh - %04Xh = %d bytes\n", *min, *max, actual_size);
+  return actual_size;
 }

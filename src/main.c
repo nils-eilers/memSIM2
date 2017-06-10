@@ -9,6 +9,7 @@
 #include <strings.h>
 #include <poll.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <limits.h>
 
 #include "parse_ihex.h"
@@ -77,6 +78,8 @@ read_binary(FILE *file, uint8_t *mem, size_t mem_size, long offset)
 {
   int res;
   unsigned long addr = 0;
+  fseek(file, 0L, SEEK_END);
+  int detected_binary_size = ftell(file);
   if (offset > 0) {
     res = fseek(file, offset, SEEK_SET);
     if (res < 0) {
@@ -84,6 +87,7 @@ read_binary(FILE *file, uint8_t *mem, size_t mem_size, long offset)
       return -1;
     }
   } else {
+    rewind(file);
     addr = -offset;
   }
   if (addr >= mem_size) {
@@ -97,12 +101,13 @@ read_binary(FILE *file, uint8_t *mem, size_t mem_size, long offset)
     return -1;
   }
 
-  return 0;
+  return detected_binary_size;
 }
 
 static int
 read_image(const char *filename, uint8_t *mem, size_t mem_size, long offset)
 {
+  int detected_binary_size;
   char *suffix;
   FILE *file = fopen(filename, "rb");
   if (!file) {
@@ -118,13 +123,13 @@ read_image(const char *filename, uint8_t *mem, size_t mem_size, long offset)
   }
   suffix++;
   if (strcasecmp(suffix, "HEX") == 0) {
-    if (parse_ihex(file, mem, mem_size, &min, &max) < 0) {
     int min, max;
+    if ((detected_binary_size = parse_ihex(file, mem, mem_size, &min, &max)) < 0) {
       fclose(file);
       return -1;
     }
   } else if (strcasecmp(suffix, "BIN") == 0) {
-    if (read_binary(file, mem, mem_size, offset) < 0) {
+    if ((detected_binary_size = read_binary(file, mem, mem_size, offset)) < 0) {
       fclose(file);
       return -1;
     }
@@ -134,7 +139,7 @@ read_image(const char *filename, uint8_t *mem, size_t mem_size, long offset)
     return -1;
   }
   fclose(file);
-  return 0;
+  return detected_binary_size;
 }
 
 static int
@@ -210,6 +215,9 @@ main(int argc, char *argv[])
   char reset_enable = '0';
   int8_t reset_time = 100;
   const struct MemType *mem_type = &memory_types[3];
+  bool mem_type_given = false;
+  int detected_size = 0;
+  int sim_size;
   char emu_enable = 'D';
   char selftest = 'N';
   char *device = "/dev/ttyUSB0";
@@ -223,6 +231,7 @@ main(int argc, char *argv[])
       device = optarg;
       break;
     case 'm':
+      mem_type_given = true;
       mem_type = NULL;
       for (i = 0; i < (sizeof(memory_types) / sizeof(memory_types[0])); i++) {
 	if (strcmp(optarg, memory_types[i].name) == 0) {
@@ -267,7 +276,6 @@ main(int argc, char *argv[])
   fd = serial_open(device);
   if (fd < 0) return EXIT_FAILURE;
 
-#if 0
   /* Identify simulator */
 
   memcpy(emu_cmd, "MI000000000000\r\n",sizeof(emu_cmd));
@@ -283,7 +291,6 @@ main(int argc, char *argv[])
   }
   emu_reply[16] = '\0';
   printf("Reply: %s\n", emu_reply);
-#endif
 
   /* Configuration */
   snprintf(emu_cmd, sizeof(emu_cmd), "MC%c%c%03d%c%c00023\r\n",
@@ -320,18 +327,41 @@ main(int argc, char *argv[])
     if (res < 0) {
       close(fd);
       return EXIT_FAILURE;
+    } else {
+      detected_size = res;
+      bool size_is_standard_size = false;
+      for (i = 0; i < (sizeof(memory_types) / sizeof(memory_types[0])); i++) {
+	if (memory_types[i].size == detected_size) {
+          size_is_standard_size = true;
+          break;
+        }
+      }
+      sim_size = mem_type_given ? mem_type->size : detected_size;
+      if (!size_is_standard_size) {
+        printf("Warning: non-standard binary size of %d bytes\n", detected_size);
+        for (i = 0; i < (sizeof(memory_types) / sizeof(memory_types[0])); i++) {
+          sim_size = memory_types[i].size;
+	  if (sim_size >= detected_size) {
+            printf("Simulated size increased to %d bytes\n", sim_size);
+            break;
+          }
+        }
+      }
+      if (mem_type_given && (detected_size != mem_type->size))
+        printf("Warning: binary size (%d bytes) doesn't match memory size (%d bytes)\n",
+              detected_size, mem_type->size);
     }
 
     snprintf(emu_cmd, sizeof(emu_cmd), "MD%04d00000058\r\n",sim_size / 1024 % 1000);
 #ifdef DEBUG
     fprintf(stderr, "Data: %s\n", emu_cmd);
 #endif
-    fprintf(stderr, "Writing %ld bytes to simulator...\n", mem_type->size);
+    fprintf(stderr, "Writing %d bytes to simulator...\n", sim_size);
     res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1);
     if (res != sizeof(emu_cmd) - 1) {
       perror("Error: Failed to write data header");
     }
-    res = write_all(fd, mem, mem_type->size);
+    res = write_all(fd, mem, sim_size);
     if (res < 0) {
       perror("Error: Failed to write data");
       close(fd);
