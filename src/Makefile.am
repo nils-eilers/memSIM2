@@ -1,7 +1,6 @@
 SUBDIRS=
 
-AM_CFLAGS = 
-
+AM_CFLAGS = -Wall -Wextra
 bin_PROGRAMS = memsim2
 
 memsim2_SOURCES = main.c \
