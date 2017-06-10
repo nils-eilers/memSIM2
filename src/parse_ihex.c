@@ -47,6 +47,9 @@ get_hex4(FILE *file, int *check)
   return v1*256 + v2;
 }
 
+
+static const char* errmsg = "Error in Intel hex file: ";
+
 int
 parse_ihex(FILE *file, uint8_t *buffer, int size, int *min, int *max)
 {
@@ -64,19 +67,33 @@ parse_ihex(FILE *file, uint8_t *buffer, int size, int *min, int *max)
     skip_white(file);
     if (feof(file)) break;
     ch = getc(file);
-    if (ch != ':') return -1;
+    if (ch != ':') {
+      fprintf(stderr, "%s':' expected\n", errmsg);
+      return -1;
+    }
     check = 0;
     length = get_hex2(file, &check);
-    if (length < 0) return length;
+    if (length < 0) {
+      fprintf(stderr, "%sillegal character in length field\n", errmsg);
+      return length;
+    }
     addr = get_hex4(file, &check);
-    if (addr < 0) return addr;
+    if (addr < 0) {
+      fprintf(stderr, "%sillegal character in address field\n", errmsg);
+      return addr;
+    }
     type = get_hex2(file, &check);
-    if (type < 0) return type;
+    if (type < 0) {
+      fprintf(stderr, "%sillegal character in type field\n", errmsg);
+      return type;
+    }
     if (type == 0) {
-      if (addr >= size) return -2;
       for (b = 0; b < length; b++) {
 	int v = get_hex2(file, &check);
-	if (v < 0) return v;
+	if (v < 0) {
+          fprintf(stderr, "%sillegal character in data field\n", errmsg);
+          return v;
+        }
 	buffer[addr] = v;
 	if (addr > *max) *max = addr;
 	if (addr < *min) *min = addr;
@@ -89,11 +106,20 @@ parse_ihex(FILE *file, uint8_t *buffer, int size, int *min, int *max)
       }
 
     } else if (type == 1) {
-      return 0;
+      break;
+    } else {
+      fprintf(stderr, "Error: Intel hex file with unsupported type %d entry\n", type);
+      return -4;
     }
     ch = get_hex2(file, &check);
-    if (ch < 0) return ch;
-    if ((check & 0xff) != 0) return -3;
+    if (ch < 0) {
+      fprintf(stderr, "%sillegal character in checksum field\n", errmsg);
+      return ch;
+    }
+    if ((check & 0xFF) != 0) {
+      fprintf(stderr, "%sWrong checksum\n", errmsg);
+      return -3;
+    }
   }
   printf("Info: Intel hex data from %04Xh - %04Xh = %d bytes\n", *min, *max, actual_size);
   return actual_size;
