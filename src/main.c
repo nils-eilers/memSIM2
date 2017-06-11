@@ -276,22 +276,6 @@ main(int argc, char *argv[])
   fd = serial_open(device);
   if (fd < 0) return EXIT_FAILURE;
 
-  /* Identify simulator */
-
-  memcpy(emu_cmd, "MI000000000000\r\n",sizeof(emu_cmd));
-  res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1);
-  if (res != sizeof(emu_cmd) - 1) {
-    perror("Failed to write initialization");
-  }
-  res = read_all(fd, (uint8_t*)emu_reply, 16, 5000);
-  if (res == 0) {
-    fprintf(stderr, "Timeout while waiting for initialization reply\n");
-    close(fd);
-    return EXIT_FAILURE;
-  }
-  emu_reply[16] = '\0';
-  printf("Reply: %s\n", emu_reply);
-
   /* Configuration */
   snprintf(emu_cmd, sizeof(emu_cmd), "MC%c%c%03d%c%c00023\r\n",
         mem_type->cmd, reset_enable, reset_time, emu_enable, selftest);
