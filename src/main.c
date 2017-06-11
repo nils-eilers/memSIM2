@@ -83,7 +83,7 @@ read_binary(FILE *file, uint8_t *mem, size_t mem_size, long offset)
   if (offset > 0) {
     res = fseek(file, offset, SEEK_SET);
     if (res < 0) {
-      perror("Error: Failed to seek to offset in binary file\n");
+      perror("Error: Failed to seek to offset in binary file");
       return -1;
     }
   } else {
@@ -97,7 +97,7 @@ read_binary(FILE *file, uint8_t *mem, size_t mem_size, long offset)
   mem_size -= addr;
   res = fread(mem + addr, sizeof(uint8_t), mem_size, file);
   if (res < 0) {
-    perror("Error: Failed to read from binary file\n");
+    perror("Error: Failed to read from binary file");
     return -1;
   }
 
