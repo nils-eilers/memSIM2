@@ -2,7 +2,7 @@ memSIM2
 =======
 
 This is a tool to load memory images onto the memSIM2 EPROM emulator
-from momik.pl
+from [MOMIK electronics](http://momik.pl/memsim.htm).
 
 Compilation
 -----------
@@ -81,12 +81,10 @@ them on and running
 to upload and reset the device. The kind of imagefile is solely
 detected by its file extension. These formats are currently supported:
 
-|-----------+-------------------------------------------------|
 | Extension | Image type                                      |
-|-----------+-------------------------------------------------|
+|-----------|-------------------------------------------------|
 | .bin      | Raw binary files                                |
 | .hex      | Intel Hex files (I8 only with 16 bit addresses) |
-|-----------+-------------------------------------------------|
 
 
 Raw binary files
@@ -262,9 +260,8 @@ is not given, memsim2 tries to auto-detect the most likely chip.
 If the option is given but memsim2 thinks it doesn't match the provided
 data, it will issue a warning.
 
-+-------+-------------------+
 | Name  | Size in kilobytes |
-|-------+-------------------|
+|-------|-------------------|
 |  2764 |   8 KB            |
 | 27128 |  16 KB            |
 | 27256 |  32 KB            |
@@ -272,7 +269,6 @@ data, it will issue a warning.
 | 27010 | 128 KB            |
 | 27020 | 256 KB            |
 | 27040 | 512 KB            |
-+-------+-------------------+
 
 
 Online help
