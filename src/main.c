@@ -13,8 +13,7 @@
 #include <limits.h>
 
 #include "parse_ihex.h"
-
-#define BPS 460800
+#include "memsim2.h"
 
 #ifndef BOTHER
 #define    BOTHER CBAUDEX
@@ -158,6 +157,61 @@ write_all(int fd, const uint8_t *data, size_t count)
   }
   return full;
 }
+
+#ifdef DEBUG
+static int
+dump_sim_mem(const uint8_t *data, size_t count)
+{
+  int fd;
+  size_t full = count;
+  int w;
+  const uint8_t *orig_data = data;
+  fd = open("dump.bin", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  if (fd < 0) {
+    fprintf(stderr, "Error: creating dump file failed\n");
+    return fd;
+  }
+  while(count > 0) {
+    w = write(fd, data, count);
+    /* fprintf(stderr, "Wrote %d\n", w); */
+    if (w < 0) {
+      fprintf(stderr, "Error: write error on dump file\n");
+      return w;
+    }
+    data += w;
+    count -= w;
+  }
+  if (close(fd) < 0) {
+    perror("Error closing dump file");
+    return -1;
+  }
+
+  count = SIMMEMSIZE;
+  full = count;
+  data = orig_data;
+  fd = open("whole-sim-mem.bin", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  if (fd < 0) {
+    fprintf(stderr, "Error: creating dump file failed\n");
+    return fd;
+  }
+  while(count > 0) {
+    w = write(fd, data, count);
+    /* fprintf(stderr, "Wrote %d\n", w); */
+    if (w < 0) {
+      perror("Error: write error on dump file");
+      return w;
+    }
+    data += w;
+    count -= w;
+  }
+  if (close(fd) < 0) {
+    perror("Error closing dump file");
+    return -1;
+  }
+  return full;
+}
+#endif
+
 
 static int
 read_all(int fd, uint8_t *data, size_t count, int timeout)
@@ -351,6 +405,9 @@ main(int argc, char *argv[])
       close(fd);
       return EXIT_FAILURE;
     }
+#ifdef DEBUG
+    dump_sim_mem(mem, sim_size);
+#endif
 
     res = read_all(fd, (uint8_t*)emu_reply, 16, 15000);
     if (res == 0) {
