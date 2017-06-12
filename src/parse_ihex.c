@@ -1,7 +1,10 @@
 #include <ctype.h>
 #include <limits.h>
+#include <stdbool.h>
+#include <string.h>
 
 #include "parse_ihex.h"
+#include "memsim2.h"
 
 static void
 skip_white(FILE *file)
@@ -51,12 +54,13 @@ get_hex4(FILE *file, int *check)
 static const char* errmsg = "Error in Intel hex file: ";
 
 int
-parse_ihex(FILE *file, uint8_t *buffer, int size, int *min, int *max)
+parse_ihex(FILE *file, uint8_t *buffer, int *min, int *max, long offset)
 {
   int ch;
   *max = 0;
   *min = INT_MAX;
   int actual_size = 0;
+  int bytes_ignored = 0;
 
   while(1) {
     int check;
@@ -94,15 +98,14 @@ parse_ihex(FILE *file, uint8_t *buffer, int size, int *min, int *max)
           fprintf(stderr, "%sillegal character in data field\n", errmsg);
           return v;
         }
-	buffer[addr] = v;
+	if ((addr - offset) >= 0)
+          buffer[addr - offset] = v;
+        else
+          bytes_ignored++;
 	if (addr > *max) *max = addr;
 	if (addr < *min) *min = addr;
         actual_size = *max - *min + 1;
-        if (actual_size > size) {
-          fprintf(stderr, "%sData exceeds %d bytes\n", errmsg, size);
-          return -5;
-        }
-	addr++;
+        addr++;
       }
 
     } else if (type == 1) {
@@ -122,5 +125,11 @@ parse_ihex(FILE *file, uint8_t *buffer, int size, int *min, int *max)
     }
   }
   printf("Info: Intel hex data from %04Xh - %04Xh = %d bytes\n", *min, *max, actual_size);
+  if (bytes_ignored) printf("Info: %d bytes outside storage area ignored\n", bytes_ignored);
+  if (!offset_given) {
+    printf("Info: no offset specified, simulated data starts at %Xh\n", *min);
+    memmove(buffer, buffer + *min, actual_size);
+    memset(buffer + actual_size, 0, SIMMEMSIZE - actual_size);
+  }
   return actual_size;
 }

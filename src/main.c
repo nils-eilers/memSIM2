@@ -23,6 +23,37 @@
 #error This code assumes int of at least 32 bit width
 #endif
 
+// Global variables
+bool mem_type_given = false;
+bool offset_given = false;
+static uint8_t mem[SIMMEMSIZE];
+
+#define MEM_TYPE_INDEX 2
+#define RESET_ENABLE_INDEX 3
+#define RESET_TIME_INDEX 4
+#define EMU_ENA_INDEX 7
+#define SELFTEST_INDEX 8
+#define CHKSUM_INDEX 12
+
+struct MemType
+{
+  const char *name;
+  char cmd;
+  int size;
+};
+
+const struct MemType memory_types[] =
+  {
+    {"2764", '0', 8*1024},
+    {"27128", '1', 16*1024},
+    {"27256", '2', 32*1024},
+    {"27512", '3', 64*1024},
+    {"27010", '4', 128*1024},
+    {"27020", '5', 256*1024},
+    {"27040", '6', 512*1024}
+  };
+
+
 extern int ioctl(int d, unsigned long request, ...);
 
 static int
@@ -56,40 +87,51 @@ serial_open(const char *device)
   }
   return fd;
 }
+
 static void
 usage(void)
 {
   fputs("Usage: [OPTION].. FILE\n"
 	"Upload image file to memSIM2 EPROM emulator\n\n"
 	"Options:\n"
-	"\t-d DEVICE     Serial device\n"
+	"\t-d DEVICE     Serial device, defaults to " DEFAULT_DEVICE "\n"
 	"\t-m MEMTYPE    Memory type (2764,27128,27256,27512,27010,27020,27040)\n"
 	"\t-r RESETTIME  Time of reset pulse in milliseconds.\n"
 	"\t              > 0 for positive pulse, < 0 for negative pulse\n"
 	"\t-e            Enable emulation\n"
-	"\t-h            This help\n",
+	"\t-o BYTES      Specify an offset value with different meaning for:\n"
+	"\t   binary files: skip first n bytes of file\n"
+	"\t   Hex files: start address in memory map of simulated memory chip\n"
+	"\t-h            This help\n\n"
+        "Numbers prefixed by '0x' are interpreted as hexadecimal numbers,\n"
+        "octal for numbers beginning with '0' and decimal for everything else.\n",
 	stderr);
 
 }
 
 static int
-read_binary(FILE *file, uint8_t *mem, size_t mem_size, long offset)
+read_binary(FILE *file, uint8_t *mem, int file_offset)
 {
   int res;
   unsigned long addr = 0;
+  int mem_size = SIMMEMSIZE;
   fseek(file, 0L, SEEK_END);
-  int detected_binary_size = ftell(file);
-  if (offset > 0) {
-    res = fseek(file, offset, SEEK_SET);
+  long detected_binary_size = ftell(file);
+  if (detected_binary_size > SIMMEMSIZE) {
+    fprintf(stderr, "Error: file too large\n");
+    return -1;
+  }
+  if (file_offset > 0) {
+    res = fseek(file, file_offset, SEEK_SET);
     if (res < 0) {
-      perror("Error: Failed to seek to offset in binary file");
+      perror("Error: Failed to seek to file_offset in binary file");
       return -1;
     }
   } else {
     rewind(file);
-    addr = -offset;
+    addr = -file_offset;
   }
-  if (addr >= mem_size) {
+  if (addr >= SIMMEMSIZE) {
     fprintf(stderr,"Error: Offset outside memory");
     return -1;
   }
@@ -104,7 +146,7 @@ read_binary(FILE *file, uint8_t *mem, size_t mem_size, long offset)
 }
 
 static int
-read_image(const char *filename, uint8_t *mem, size_t mem_size, long offset)
+read_image(const char *filename, uint8_t *mem, int offset, int *min, int *max)
 {
   int detected_binary_size;
   char *suffix;
@@ -122,13 +164,12 @@ read_image(const char *filename, uint8_t *mem, size_t mem_size, long offset)
   }
   suffix++;
   if (strcasecmp(suffix, "HEX") == 0) {
-    int min, max;
-    if ((detected_binary_size = parse_ihex(file, mem, mem_size, &min, &max)) < 0) {
+    if ((detected_binary_size = parse_ihex(file, mem, min, max, offset)) < 0) {
       fclose(file);
       return -1;
     }
   } else if (strcasecmp(suffix, "BIN") == 0) {
-    if ((detected_binary_size = read_binary(file, mem, mem_size, offset)) < 0) {
+    if ((detected_binary_size = read_binary(file, mem, offset)) < 0) {
       fclose(file);
       return -1;
     }
@@ -232,32 +273,19 @@ read_all(int fd, uint8_t *data, size_t count, int timeout)
   return full;
 }
 
-static uint8_t mem[512*1024];
+void check_input(const char *userinput, const char *endptr) {
+  const char *p = userinput;
+  if (*endptr == '\0') return;
+  fprintf(stderr, "Error: invalid characters found:\n%s\n", userinput);
+  while (*p) {
+    if (p++ == endptr) {
+      fprintf(stderr, "^\n");
+      break;
+    } else fputc(' ', stderr);
+  }
+  exit(EXIT_FAILURE);
+}
 
-#define MEM_TYPE_INDEX 2
-#define RESET_ENABLE_INDEX 3
-#define RESET_TIME_INDEX 4
-#define EMU_ENA_INDEX 7
-#define SELFTEST_INDEX 8
-#define CHKSUM_INDEX 12
-
-struct MemType
-{
-  const char *name;
-  char cmd;
-  int size;
-};
-
-const struct MemType memory_types[] =
-  {
-    {"2764", '0', 8*1024},
-    {"27128", '1', 16*1024},
-    {"27256", '2', 32*1024},
-    {"27512", '3', 64*1024},
-    {"27010", '4', 128*1024},
-    {"27020", '5', 256*1024},
-    {"27040", '6', 512*1024}
-  };
 
 int
 main(int argc, char *argv[])
@@ -266,20 +294,21 @@ main(int argc, char *argv[])
   int fd;
   unsigned int i;
   long offset = 0;
-  char reset_enable = '0';
-  int8_t reset_time = 100;
+  char reset_enable = 'N';
+  int8_t reset_time = 200;
   const struct MemType *mem_type = &memory_types[3];
-  bool mem_type_given = false;
   int detected_size = 0;
   int sim_size;
   char emu_enable = 'D';
   char selftest = 'N';
-  char *device = "/dev/ttyUSB0";
+  char *device = DEFAULT_DEVICE;
   int opt;
   char emu_cmd[16+1];
   char emu_reply[16+1];
   int value;
-  while((opt = getopt(argc, argv, "hd:m:r:e")) != -1) {
+  int min, max;
+  char *endptr;
+  while((opt = getopt(argc, argv, "hd:m:o:r:e")) != -1) {
     switch(opt) {
     case 'd':
       device = optarg;
@@ -298,16 +327,22 @@ main(int argc, char *argv[])
 	return EXIT_FAILURE;
       }
       break;
+    case 'o':
+      offset_given = true;
+      offset = strtol(optarg, &endptr, 0);
+      check_input(optarg, endptr);
+      break;
     case 'r':
-      value = atoi(optarg);
+      value = strtol(optarg, &endptr, 0);
+      check_input(optarg, endptr);
       if (value < -255 || value > 255) {
 	fprintf(stderr, "Error: Reset time out of range\n");
 	return EXIT_FAILURE;
       }
-      if (reset_time == 0) {
+      if (value == 0) {
 	reset_enable = '0';
         reset_time = 0;
-      } else if (reset_time > 0) {
+      } else if (value > 0) {
 	reset_enable = 'P';
         reset_time = value;
       } else {
@@ -361,12 +396,17 @@ main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
   if (argc > optind) {
-    res = read_image(argv[optind], mem, mem_type->size, offset);
+    res = read_image(argv[optind], mem, offset, &min, &max);
     if (res < 0) {
       close(fd);
       return EXIT_FAILURE;
     } else {
       detected_size = res;
+      if (mem_type_given && (detected_size > mem_type->size)) {
+        fprintf(stderr, "Too much data (%d bytes) for specified memory type (%d bytes)\n", detected_size, mem_type->size);
+        close(fd);
+        return EXIT_FAILURE;
+      }
       bool size_is_standard_size = false;
       for (i = 0; i < (sizeof(memory_types) / sizeof(memory_types[0])); i++) {
 	if (memory_types[i].size == detected_size) {
@@ -377,11 +417,13 @@ main(int argc, char *argv[])
       sim_size = mem_type_given ? mem_type->size : detected_size;
       if (!size_is_standard_size) {
         printf("Warning: non-standard binary size of %d bytes\n", detected_size);
-        for (i = 0; i < (sizeof(memory_types) / sizeof(memory_types[0])); i++) {
-          sim_size = memory_types[i].size;
-	  if (sim_size >= detected_size) {
-            printf("Simulated size increased to %d bytes\n", sim_size);
-            break;
+        if (!mem_type_given) {
+          for (i = 0; i < (sizeof(memory_types) / sizeof(memory_types[0])); i++) {
+            sim_size = memory_types[i].size;
+            if (sim_size >= detected_size) {
+              printf("Simulated size increased to %d bytes\n", sim_size);
+              break;
+            }
           }
         }
       }
