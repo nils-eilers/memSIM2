@@ -11,8 +11,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <ctype.h>
 
 #include "parse_ihex.h"
+#include "parse_srec.h"
 #include "memsim2.h"
 
 #ifndef BOTHER
@@ -168,6 +170,14 @@ read_image(const char *filename, uint8_t *mem, int offset, int *min, int *max)
       fclose(file);
       return -1;
     }
+  } else if (!strcasecmp(suffix, "S19")  || !strcasecmp(suffix, "S28")  ||
+             !strcasecmp(suffix, "S37")  || !strcasecmp(suffix, "SREC") ||
+             !strcasecmp(suffix, "MOT"))
+  {
+    if ((detected_binary_size = parse_srec(file, mem, min, max, offset)) < 0) {
+      fclose(file);
+      return -1;
+    }
   } else if (strcasecmp(suffix, "BIN") == 0) {
     if ((detected_binary_size = read_binary(file, mem, offset)) < 0) {
       fclose(file);
@@ -285,6 +295,93 @@ void check_input(const char *userinput, const char *endptr) {
   }
   exit(EXIT_FAILURE);
 }
+
+void
+skip_white(FILE *file)
+{
+  int ch;
+  while((ch = getc(file)) != EOF && isspace(ch));
+  ungetc(ch, file);
+}
+
+void
+ignore_rest_of_line(FILE *file)
+{
+  int c;
+
+  // Skip all characters until line end found
+  do {
+    if ((c = getc(file)) == EOF) return;
+  } while (c != '\n' && c != '\r');
+  // Discard one or several line ending characters
+  do {
+    if ((c = getc(file)) == EOF) return;
+  } while (c == '\n' || c == '\r');
+  if (c == EOF) return;
+  // c is not a line ending character, push back to stream
+  ungetc(c, file);
+}
+
+
+int
+get_hex(FILE *file)                             // nibble
+{
+  int ch;
+  ch = getc(file);
+  if (ch >= '0' && ch <= '9') return ch - '0';
+  if (ch >= 'A' && ch <= 'F') return ch - 'A' + 10;
+  if (ch >= 'a' && ch <= 'a') return ch - 'a' + 10;
+  ungetc(ch, file);
+  return -1;
+}
+
+int
+get_hex2(FILE *file, int *check)                // 8 bit
+{
+  int v1, v2;
+  v1 = get_hex(file);
+  if (v1 < 0) return v1;
+  v2 = get_hex(file);
+  if (v2 < 0) return v2;
+  v2 += v1 * 16;
+  if (check != NULL) *check += v2;
+  return v2;
+}
+
+int
+get_hex4(FILE *file, int *check)                // 16 bit
+{
+  int v1, v2;
+  v1 = get_hex2(file, check);
+  if (v1 < 0) return v1;
+  v2 = get_hex2(file, check);
+  if (v2 < 0) return v2;
+  return v1 * 256 + v2;
+}
+
+int
+get_hex6(FILE *file, int *check)                // 24 bit
+{
+  int v1, v2;
+  v1 = get_hex4(file, check);
+  if (v1 < 0) return v1;
+  v2 = get_hex2(file, check);
+  if (v2 < 0) return v2;
+  return v1 * 256 + v2;
+}
+
+
+long long int
+get_hex8(FILE *file, int *check)                // 32 bit
+{
+  long long v1, v2;
+  v1 = get_hex4(file, check);
+  if (v1 < 0) return v1;
+  v2 = get_hex4(file, check);
+  if (v2 < 0) return v2;
+  return v1 * 65536 + v2;
+}
+
 
 
 int

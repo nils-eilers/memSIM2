@@ -81,10 +81,11 @@ them on and running
 to upload and reset the device. The kind of imagefile is solely
 detected by its file extension. These formats are currently supported:
 
-| Extension | Image type       |
-|-----------|------------------|
-| .bin      | Raw binary files |
-| .hex      | Intel Hex files  |
+| Extension                 | Image type        |
+|---------------------------|-------------------|
+| .bin                      | Raw binary files  |
+| .hex                      | Intel Hex files   |
+| .s19 .s28 .s37 .srec .mot | Motorola S-Record |
 
 
 Raw binary files
@@ -208,6 +209,90 @@ doesn't work, provide the kind of chip and the starting address within
 the system memory map:
 
         memsim2 -m 2764 -o 0xF000 monitor.hex
+
+Motorola S-Record
+-----------------
+
+This file format is detected by a couple of file extensions: .s19, .s28,
+.s37, .srec and .mot, for example:
+
+        memsim2 mydata.s19
+
+It doesn't make any difference which actual file extension you provide,
+they're all treated in the same manner.
+
+The S-Record file format is very similiar to the Intel Hex file
+format, so don't be surprised to find most of the provided description
+here just being a copy of the former paragraph describing the Intel Hex
+file format. The most notably difference is that a S-Record file may
+contain a header with ASCII text that is written to the screen and
+can be used to provide a description, version number etc. Another
+difference is that there is a provision to detect data corruption if
+the actual number of records stored inside the file varies from the
+specified number of records. If this should happen, a warning is
+written to stderr.
+
+SREC files usually consist of several records (text lines) with
+data, each secured with a checksum and provided with an start address
+indicating where the following data bytes should get stored.
+
+Each checksum is verified, bad files are rejected.
+
+The data records may appear in any order. For example data at lower
+addresses may follow data at higher addresses. Spaces between occupied
+memory areas are allowed also. memsim2 will determine the lowest and
+highest address at which data is stored and use this information to
+auto-detect the simulated chip if no -m option is given.
+
+There are two possible ways to specify the addresses inside the hex
+file: seen relative to the storage position inside the memory chip or
+absolute inside the system's memory map. For example, think of a 2764
+chip of 8 KB size storing code from 0xE000 to 0xFFFF within the system's
+memory map of a 6502 system. If seen relative to the storage position
+inside the chip, the addresses inside the hex file will start at 0x0000
+and rise up to 0x1FFF (8191 decimal). If the addresses inside the hex
+file are seen absolute to the memory map, they will start at 0xE000 and
+rise up to 0xFFFF.
+
+Either way, relative or absolute addresses, memsim2 will auto-detect
+the amount of data and the used addresses to determine the appropriate
+chip to simulate.
+
+This detection may however fail if you want to simulate only a subset
+of a larger provided rom-set or if there is some unused, reserved space
+before the provided data starts.
+
+Remember the 8 / 16 KB example from the binary files where we simulated
+only the upper 8 KB? If we had this data provided as hex files with
+addresses starting at 0x0000 (relative addresses), simulating only the
+upper half would look like this:
+
+        memsim2 -m 2764 -o 8192 os16k.s19
+
+As another example with absolute addresses inside the hex file, think of
+a boot ROM for a 6502 system located at the top of memory, stored in an
+8 KB 2764 chip with addresses from 0xE000 to 0xFFFF.
+
+You're working on a monitor code starting at address 0xF000, leaving 4 KB
+of free space reserved for further extensions in a range from 0xE000 to
+0xEFFF.
+
+memsim2 will notice that the provided data starts at 0xF000 so it will
+wrongly assume a start address for the memory chip of 0xF000 which will
+put your code in the wrong place: because the simulated chip is visible
+from 0xE000 to 0xFFFF, your data will now be placed at 0xE000 instead of
+0xF000 and you won't have any useful reset and other system vectors at
+the top of memory, thus breaking your system. Just tell memsim2 where the
+simulated memory actually starts inside the system's memory map with
+the -o option:
+
+        memsim2 -m 2764 -o 0xF000 monitor.s19
+
+This may sound confusing. As a rule of thumb: if the auto-detection
+doesn't work, provide the kind of chip and the starting address within
+the system memory map:
+
+        memsim2 -m 2764 -o 0xF000 monitor.s19
 
 
 Specifying the used port

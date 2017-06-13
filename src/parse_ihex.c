@@ -6,62 +6,6 @@
 #include "parse_ihex.h"
 #include "memsim2.h"
 
-static void
-skip_white(FILE *file)
-{
-  int ch;
-  while((ch = getc(file)) != EOF && isspace(ch));
-  ungetc(ch, file);
-}
-
-static int
-get_hex(FILE *file)                             // nibble
-{
-  int ch;
-  ch = getc(file);
-  if (ch >= '0' && ch <= '9') return ch - '0';
-  if (ch >= 'A' && ch <= 'F') return ch - 'A' + 10;
-  if (ch >= 'a' && ch <= 'a') return ch - 'a' + 10;
-  ungetc(ch, file);
-  return -1;
-}
-
-static int
-get_hex2(FILE *file, int *check)                // 8 bit
-{
-  int v1, v2;
-  v1 = get_hex(file);
-  if (v1 < 0) return v1;
-  v2 = get_hex(file);
-  if (v2 < 0) return v2;
-  v2 += v1 * 16;
-  *check += v2;
-  return v2;
-}
-
-static int
-get_hex4(FILE *file, int *check)                // 16 bit
-{
-  int v1, v2;
-  v1 = get_hex2(file, check);
-  if (v1 < 0) return v1;
-  v2 = get_hex2(file, check);
-  if (v2 < 0) return v2;
-  return v1 * 256 + v2;
-}
-
-static long long int
-get_hex8(FILE *file, int *check)                // 32 bit
-{
-  long long v1, v2;
-  v1 = get_hex4(file, check);
-  if (v1 < 0) return v1;
-  v2 = get_hex4(file, check);
-  if (v2 < 0) return v2;
-  return v1 * 65536 + v2;
-}
-
-
 static const char* errmsg = "Error in Intel hex file: ";
 
 int
