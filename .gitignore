@@ -19,3 +19,6 @@ src/Makefile.in
 src/memSIM2
 src/memsim2
 stamp-h1
+dump.bin
+whole-sim-mem.bin
+test/
