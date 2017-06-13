@@ -81,12 +81,12 @@ them on and running
 to upload and reset the device. The kind of imagefile is solely
 detected by its file extension. These formats are currently supported:
 
-|-----------+-------------------------------------------------|
-| Extension | Image type                                      |
-|-----------+-------------------------------------------------|
-| .bin      | Raw binary files                                |
-| .hex      | Intel Hex files (I8 only with 16 bit addresses) |
-|-----------+-------------------------------------------------|
+|-----------+------------------|
+| Extension | Image type       |
+|-----------+------------------|
+| .bin      | Raw binary files |
+| .hex      | Intel Hex files  |
+|-----------+------------------|
 
 
 Raw binary files
@@ -148,10 +148,6 @@ These may come in three variants:
 - I8HEX (16 bit addresses)
 - I16HEX (20 bit addresses)
 - I32HEX (32 bit addresses)
-
-Currently only I8HEX is supported, effectively limiting the address size
-to 64 KB, whereas other kind of hex files are rejected with an error
-message about unsupported type 2 or 4 entry.
 
 Intel hex files usually consist of several records (text lines) with
 data, each secured with a checksum and provided with an start address
