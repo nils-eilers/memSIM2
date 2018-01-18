@@ -455,7 +455,7 @@ main(int argc, char *argv[])
    unsigned int i;
    long offset = 0;
    char reset_enable = 'N';
-   int8_t reset_time = 200;
+   short int reset_time = 200;
    const struct MemType *mem_type = &memory_types[3];
    int detected_size = 0;
    int sim_size;
