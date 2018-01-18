@@ -210,6 +210,9 @@ write_all(int fd, const uint8_t *data, size_t count)
 }
 
 #ifdef DEBUG
+
+#define debug_printf(format, ...) printf((format), __VA_ARGS__)
+
 static int
 dump_sim_mem(const uint8_t *data, size_t count)
 {
@@ -260,6 +263,15 @@ dump_sim_mem(const uint8_t *data, size_t count)
     return -1;
   }
   return full;
+}
+#else
+#define debug_printf(format, ...)
+
+static int
+dump_sim_mem(const uint8_t *data, size_t count)
+{
+  (void) data;
+  return count;
 }
 #endif
 
@@ -466,9 +478,7 @@ main(int argc, char *argv[])
   /* Configuration */
   snprintf(emu_cmd, sizeof(emu_cmd), "MC%c%c%03d%c%c00023\r\n",
         mem_type->cmd, reset_enable, reset_time, emu_enable, selftest);
-#if DEBUG
-  fprintf(stderr, "Config: %s\n", emu_cmd);
-#endif
+  debug_printf("Config: %s\n", emu_cmd);
   res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1);
   if (res != sizeof(emu_cmd) - 1) {
     perror("Failed to write configuration");
@@ -484,10 +494,8 @@ main(int argc, char *argv[])
     close(fd);
     return EXIT_FAILURE;
   }
-#if DEBUG
   emu_reply[16] = '\0';
-  printf("Reply: %s\n", emu_reply);
-#endif
+  debug_printf("Reply: %s\n", emu_reply);
   if (memcmp(emu_cmd, emu_reply, 8) != 0) {
     fprintf(stderr, "Error: Response didn't match command\n");
     close(fd);
@@ -535,9 +543,7 @@ main(int argc, char *argv[])
         detected_size, mem_type->size);
 
   snprintf(emu_cmd, sizeof(emu_cmd), "MD%04d00000058\r\n",sim_size / 1024 % 1000);
-#ifdef DEBUG
-  fprintf(stderr, "Data: %s\n", emu_cmd);
-#endif
+  debug_printf("Data: %s\n", emu_cmd);
   fprintf(stderr, "Writing %d bytes to simulator...\n", sim_size);
   res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1);
   if (res != sizeof(emu_cmd) - 1) {
@@ -549,9 +555,7 @@ main(int argc, char *argv[])
     close(fd);
     return EXIT_FAILURE;
   }
-#ifdef DEBUG
   dump_sim_mem(mem, sim_size);
-#endif
 
   res = read_all(fd, (uint8_t*)emu_reply, 16, 15000);
   if (res == 0) {
@@ -564,10 +568,8 @@ main(int argc, char *argv[])
     close(fd);
     return EXIT_FAILURE;
   }
-#ifdef DEBUG
   emu_reply[16] = '\0';
-  printf("Reply: %s\n", emu_reply);
-#endif
+  debug_printf("Reply: %s\n", emu_reply);
   if (memcmp(emu_cmd, emu_reply, 8) != 0) {
     fprintf(stderr, "Error: Response didn't match command\n");
     close(fd);
