@@ -532,6 +532,71 @@ main(int argc, char *argv[])
 
    }
 
+   if (argc <= optind) return EXIT_SUCCESS;
+
+   res = read_image(argv[optind], mem, offset, &min, &max);
+   if (res < 0)
+   {
+      return EXIT_FAILURE;
+   }
+   detected_size = res;
+   if (mem_type_given && (detected_size > mem_type->size))
+   {
+      fprintf(stderr, "Too much data (%d bytes) for specified memory type (%d bytes)\n", detected_size, mem_type->size);
+      return EXIT_FAILURE;
+   }
+   bool size_is_standard_size = false;
+   for (i = 0; i < (sizeof(memory_types) / sizeof(memory_types[0])); i++)
+   {
+      if (memory_types[i].size == detected_size)
+      {
+         size_is_standard_size = true;
+         break;
+      }
+   }
+   sim_size = mem_type_given ? mem_type->size : detected_size;
+   if (!size_is_standard_size)
+   {
+      printf("Warning: non-standard binary size of %d bytes\n", detected_size);
+      if (!mem_type_given) {
+         for (i = 0; i < (sizeof(memory_types) / sizeof(memory_types[0])); i++)
+         {
+            sim_size = memory_types[i].size;
+            if (sim_size >= detected_size)
+            {
+               printf("Simulated size increased to %d bytes\n", sim_size);
+               break;
+            }
+         }
+      }
+   }
+   if (mem_type_given && (detected_size != mem_type->size))
+   {
+      printf("Warning: binary size (%d bytes) doesn't match memory size (%d bytes)\n",
+            detected_size, mem_type->size);
+   }
+
+   /* Guess chip type from file size */
+   if (!mem_type_given)
+   {
+      mem_type = NULL;
+      for (i = 0; i < (sizeof(memory_types) / sizeof(memory_types[0])); i++)
+      {
+         if (memory_types[i].size == sim_size)
+         {
+            mem_type = &memory_types[i];
+            printf("%d bytes, must be a %s chip.\n", sim_size, mem_type->name);
+            break;
+         }
+      }
+      if (!mem_type)
+      {
+         fprintf(stderr, "Can't autodetect chip type for %d bytes\n", sim_size);
+         return EXIT_FAILURE;
+      }
+
+   }
+
    fd = serial_open(device);
    if (fd < 0) return EXIT_FAILURE;
 
@@ -565,53 +630,6 @@ main(int argc, char *argv[])
       return EXIT_FAILURE;
    }
 
-   if (argc <= optind)
-   {
-      close(fd);
-      return EXIT_SUCCESS;
-   }
-
-   res = read_image(argv[optind], mem, offset, &min, &max);
-   if (res < 0)
-   {
-      close(fd);
-      return EXIT_FAILURE;
-   }
-   detected_size = res;
-   if (mem_type_given && (detected_size > mem_type->size))
-   {
-      fprintf(stderr, "Too much data (%d bytes) for specified memory type (%d bytes)\n", detected_size, mem_type->size);
-      close(fd);
-      return EXIT_FAILURE;
-   }
-   bool size_is_standard_size = false;
-   for (i = 0; i < (sizeof(memory_types) / sizeof(memory_types[0])); i++)
-   {
-      if (memory_types[i].size == detected_size)
-      {
-         size_is_standard_size = true;
-         break;
-      }
-   }
-   sim_size = mem_type_given ? mem_type->size : detected_size;
-   if (!size_is_standard_size)
-   {
-      printf("Warning: non-standard binary size of %d bytes\n", detected_size);
-      if (!mem_type_given) {
-         for (i = 0; i < (sizeof(memory_types) / sizeof(memory_types[0])); i++)
-         {
-            sim_size = memory_types[i].size;
-            if (sim_size >= detected_size)
-            {
-               printf("Simulated size increased to %d bytes\n", sim_size);
-               break;
-            }
-         }
-      }
-   }
-   if (mem_type_given && (detected_size != mem_type->size))
-      printf("Warning: binary size (%d bytes) doesn't match memory size (%d bytes)\n",
-            detected_size, mem_type->size);
 
    snprintf(emu_cmd, sizeof(emu_cmd), "MD%04d00000058\r\n",sim_size / 1024 % 1000);
    debug_printf("Data: %s\n", emu_cmd);
