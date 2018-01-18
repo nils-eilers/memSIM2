@@ -405,6 +405,7 @@ main(int argc, char *argv[])
   int value;
   int min, max;
   char *endptr;
+
   while((opt = getopt(argc, argv, "hd:m:o:r:e")) != -1) {
     switch(opt) {
     case 'd':
@@ -492,84 +493,88 @@ main(int argc, char *argv[])
     close(fd);
     return EXIT_FAILURE;
   }
-  if (argc > optind) {
-    res = read_image(argv[optind], mem, offset, &min, &max);
-    if (res < 0) {
-      close(fd);
-      return EXIT_FAILURE;
-    } else {
-      detected_size = res;
-      if (mem_type_given && (detected_size > mem_type->size)) {
-        fprintf(stderr, "Too much data (%d bytes) for specified memory type (%d bytes)\n", detected_size, mem_type->size);
-        close(fd);
-        return EXIT_FAILURE;
-      }
-      bool size_is_standard_size = false;
+
+  if (argc <= optind) {
+    close(fd);
+    return EXIT_SUCCESS;
+  }
+
+  res = read_image(argv[optind], mem, offset, &min, &max);
+  if (res < 0) {
+    close(fd);
+    return EXIT_FAILURE;
+  }
+  detected_size = res;
+  if (mem_type_given && (detected_size > mem_type->size)) {
+    fprintf(stderr, "Too much data (%d bytes) for specified memory type (%d bytes)\n", detected_size, mem_type->size);
+    close(fd);
+    return EXIT_FAILURE;
+  }
+  bool size_is_standard_size = false;
+  for (i = 0; i < (sizeof(memory_types) / sizeof(memory_types[0])); i++) {
+    if (memory_types[i].size == detected_size) {
+      size_is_standard_size = true;
+      break;
+    }
+  }
+  sim_size = mem_type_given ? mem_type->size : detected_size;
+  if (!size_is_standard_size) {
+    printf("Warning: non-standard binary size of %d bytes\n", detected_size);
+    if (!mem_type_given) {
       for (i = 0; i < (sizeof(memory_types) / sizeof(memory_types[0])); i++) {
-	if (memory_types[i].size == detected_size) {
-          size_is_standard_size = true;
+        sim_size = memory_types[i].size;
+        if (sim_size >= detected_size) {
+          printf("Simulated size increased to %d bytes\n", sim_size);
           break;
         }
       }
-      sim_size = mem_type_given ? mem_type->size : detected_size;
-      if (!size_is_standard_size) {
-        printf("Warning: non-standard binary size of %d bytes\n", detected_size);
-        if (!mem_type_given) {
-          for (i = 0; i < (sizeof(memory_types) / sizeof(memory_types[0])); i++) {
-            sim_size = memory_types[i].size;
-            if (sim_size >= detected_size) {
-              printf("Simulated size increased to %d bytes\n", sim_size);
-              break;
-            }
-          }
-        }
-      }
-      if (mem_type_given && (detected_size != mem_type->size))
-        printf("Warning: binary size (%d bytes) doesn't match memory size (%d bytes)\n",
-              detected_size, mem_type->size);
     }
-
-    snprintf(emu_cmd, sizeof(emu_cmd), "MD%04d00000058\r\n",sim_size / 1024 % 1000);
-#ifdef DEBUG
-    fprintf(stderr, "Data: %s\n", emu_cmd);
-#endif
-    fprintf(stderr, "Writing %d bytes to simulator...\n", sim_size);
-    res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1);
-    if (res != sizeof(emu_cmd) - 1) {
-      perror("Error: Failed to write data header");
-    }
-    res = write_all(fd, mem, sim_size);
-    if (res < 0) {
-      perror("Error: Failed to write data");
-      close(fd);
-      return EXIT_FAILURE;
-    }
-#ifdef DEBUG
-    dump_sim_mem(mem, sim_size);
-#endif
-
-    res = read_all(fd, (uint8_t*)emu_reply, 16, 15000);
-    if (res == 0) {
-      fprintf(stderr, "Error: Timeout while waiting for write operation\n");
-      close(fd);
-      return EXIT_FAILURE;
-    }
-    if (res != 16) {
-      perror("Error: Failed to read data reply");
-      close(fd);
-      return EXIT_FAILURE;
-    }
-#ifdef DEBUG
-    emu_reply[16] = '\0';
-    printf("Reply: %s\n", emu_reply);
-#endif
-    if (memcmp(emu_cmd, emu_reply, 8) != 0) {
-      fprintf(stderr, "Error: Response didn't match command\n");
-      close(fd);
-      return EXIT_FAILURE;
-    }
-    fprintf(stderr, "Done\n");
   }
+  if (mem_type_given && (detected_size != mem_type->size))
+    printf("Warning: binary size (%d bytes) doesn't match memory size (%d bytes)\n",
+        detected_size, mem_type->size);
+
+  snprintf(emu_cmd, sizeof(emu_cmd), "MD%04d00000058\r\n",sim_size / 1024 % 1000);
+#ifdef DEBUG
+  fprintf(stderr, "Data: %s\n", emu_cmd);
+#endif
+  fprintf(stderr, "Writing %d bytes to simulator...\n", sim_size);
+  res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1);
+  if (res != sizeof(emu_cmd) - 1) {
+    perror("Error: Failed to write data header");
+  }
+  res = write_all(fd, mem, sim_size);
+  if (res < 0) {
+    perror("Error: Failed to write data");
+    close(fd);
+    return EXIT_FAILURE;
+  }
+#ifdef DEBUG
+  dump_sim_mem(mem, sim_size);
+#endif
+
+  res = read_all(fd, (uint8_t*)emu_reply, 16, 15000);
+  if (res == 0) {
+    fprintf(stderr, "Error: Timeout while waiting for write operation\n");
+    close(fd);
+    return EXIT_FAILURE;
+  }
+  if (res != 16) {
+    perror("Error: Failed to read data reply");
+    close(fd);
+    return EXIT_FAILURE;
+  }
+#ifdef DEBUG
+  emu_reply[16] = '\0';
+  printf("Reply: %s\n", emu_reply);
+#endif
+  if (memcmp(emu_cmd, emu_reply, 8) != 0) {
+    fprintf(stderr, "Error: Response didn't match command\n");
+    close(fd);
+    return EXIT_FAILURE;
+  }
+  fprintf(stderr, "Done\n");
+
   close(fd);
   return EXIT_SUCCESS;
 }
