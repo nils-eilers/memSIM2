@@ -99,7 +99,7 @@ usage(void)
    fputs("Usage: [OPTION].. FILE\n"
          "Upload image file to memSIM2 EPROM emulator\n\n"
          "Options:\n"
-         "\t-d DEVICE     Serial device, defaults to " DEFAULT_DEVICE "\n"
+         "\t-d DEVICE     Serial device, defaults to " UDEV_DEVICE "\n"
          "\t-m MEMTYPE    Memory type (2764,27128,27256,27512,27010,27020,27040)\n"
          "\t-r RESETTIME  Time of reset pulse in milliseconds.\n"
          "\t              > 0 for positive pulse, < 0 for negative pulse\n"
@@ -461,7 +461,7 @@ main(int argc, char *argv[])
    int sim_size;
    char emu_enable = 'D';
    char selftest = 'N';
-   char *device = DEFAULT_DEVICE;
+   char *device = NULL;
    int opt;
    char emu_cmd[16+1];
    char emu_reply[16+1];
@@ -597,7 +597,8 @@ main(int argc, char *argv[])
 
    }
 
-   fd = serial_open(device);
+   fd = serial_open(device == NULL ? UDEV_DEVICE : device);
+   if (fd < 0) serial_open(DEFAULT_DEVICE);
    if (fd < 0) return EXIT_FAILURE;
 
    /* Configuration */

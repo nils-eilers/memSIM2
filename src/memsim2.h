@@ -1,6 +1,11 @@
 #pragma once
 
 #define BPS 460800
+
+// Symlink for device name, assigned by udev rule:
+#define UDEV_DEVICE "/dev/memsim2"
+
+// Fallback if UDEV_DEVICE cannot be found:
 #define DEFAULT_DEVICE "/dev/ttyUSB0"
 
 #define SIMMEMSIZE (512 * 1024)
