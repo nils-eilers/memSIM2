@@ -198,7 +198,7 @@ read_image(const char *filename, uint8_t *mem, int offset, int *min, int *max)
          return -1;
       }
    }
-   else if (strcasecmp(suffix, "BIN") == 0)
+   else if (!strcasecmp(suffix, "BIN") || !strcasecmp(suffix, "ROM"))
    {
       if ((detected_binary_size = read_binary(file, mem, offset)) < 0)
       {
