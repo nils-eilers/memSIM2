@@ -598,7 +598,11 @@ main(int argc, char *argv[])
    }
 
    fd = serial_open(device == NULL ? UDEV_DEVICE : device);
-   if (fd < 0) serial_open(DEFAULT_DEVICE);
+   if (fd < 0)
+   {
+      printf("Trying default device: %s\n", DEFAULT_DEVICE);
+      fd = serial_open(DEFAULT_DEVICE);
+   }
    if (fd < 0) return EXIT_FAILURE;
 
    /* Configuration */
