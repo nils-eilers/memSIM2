@@ -10,8 +10,8 @@
 
 #define SIMMEMSIZE (512 * 1024)
 
-bool offset_given;
-bool mem_type_given;
+extern bool offset_given;
+extern bool mem_type_given;
 
 void skip_white(FILE *file);
 void ignore_rest_of_line(FILE *file);
