@@ -17,8 +17,7 @@ make install
 memSIM -h
 ```
 
-Should build on Linux out of the box.
-Other UN*X may needs some modifications. The are some Linux-specific hacks to make the serial port run at 460800bps.
+Should build on Linux and most POSIX systems out of the box.
 
 Installation
 ------------
