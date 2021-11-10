@@ -17,7 +17,7 @@ make install
 memSIM -h
 ```
 
-Tested on Linux and GhobstBSD, which is based on FreeBSD. Should build on most POSIX systems out of the box.
+Tested on Linux and GhostBSD, which is based on FreeBSD. Should build on most POSIX systems out of the box.
 
 Installation
 ------------
@@ -115,7 +115,7 @@ I've got the 32 pin cable version of the memSIM2 and I also need to work with 28
 Similarly it is possible to also connect the 32 or 28 pin cable to a 24 pin socket by again using the lower 24 pins (pins 1, 2, 3, 4, 29, 30, 31 & 32, the top 8 pins are exposed). Be careful not to short the exposed pins to anything else. Also I'm pretty sure that the Vcc pin 24 needs to be connected to pin 28 of the cable for voltage sensing. (Untested)
 
 - When loading code into the simulated EPROM where does it get loaded?
-- I can have multiple address sections that may not be contigous. Will it load correctly?
+- I can have multiple address sections that may not be contiguous. Will it load correctly?
 - How does it know where the EPROM starts?
 - I'm not sure I have this coded with the s-record.
 - Need to provide pictures of the stacked machine sockets adapters.
@@ -297,7 +297,7 @@ This file format is detected by a couple of file extensions: .s19, .s28,
 It doesn't make any difference which actual file extension you provide,
 they're all treated in the same manner.
 
-The S-Record file format is very similiar to the Intel Hex file
+The S-Record file format is very similar to the Intel Hex file
 format, so don't be surprised to find most of the provided description
 here just being a copy of the former paragraph describing the Intel Hex
 file format. The most notably difference is that a S-Record file may
@@ -482,7 +482,7 @@ Basic parameters of the memSIM2 simulator
 
 # EPROM pin out
 
-When I ordered the memSIM2 device I didn't know that the sevice could come with a 28 adapter cable. Now I have to wonder how to hookup the memSIM2 to the device. At this time I'm assuming the only pin that has to be rerouted is the Vcc (power) pin.
+When I ordered the memSIM2 device I didn't know that the device could come with a 28 adapter cable. Now I have to wonder how to hookup the memSIM2 to the device. At this time I'm assuming the only pin that has to be rerouted is the Vcc (power) pin.
 
 [PROM/ROM index and cross reference](https://www.mikesarcade.com/cgi-bin/spies.cgi?action=url&type=info&page=ROMref.txt)
 
