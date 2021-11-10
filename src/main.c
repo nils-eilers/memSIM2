@@ -67,7 +67,7 @@ serial_open(const char *device)
       perror(device);
       return -1;
    }
-   
+
    if (tcgetattr(fd, &settings) < 0)
    {
       perror("tcgetattr failed");
