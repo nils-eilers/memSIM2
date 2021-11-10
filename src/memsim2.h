@@ -6,7 +6,15 @@
 #define UDEV_DEVICE "/dev/memsim2"
 
 // Fallback if UDEV_DEVICE cannot be found:
+#if defined(__linux__)
 #define DEFAULT_DEVICE "/dev/ttyUSB0"
+#else
+#if defined(__FreeBSD__)
+#define DEFAULT_DEVICE "/dev/cuaU0"
+#else
+#error Please define DEFAULT_DEVICE for your operating system!
+#endif
+#endif
 
 #define SIMMEMSIZE (512 * 1024)
 
