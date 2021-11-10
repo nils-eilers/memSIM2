@@ -1,9 +1,4 @@
-TODO: Installation und Anwendung der udev-rule in README beschreiben
-
-
-
 Reset -r n deaktiviert die Simulation. Zusätzlich -e (enable) löst den Reset-Puls aus und aktiviert die Emulation.
 
 
-memSIM2 -er -200 -m 2764 rnd.bin 
-
+memSIM2 -er -200 -m 2764 rnd.bin

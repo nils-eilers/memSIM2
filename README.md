@@ -30,6 +30,15 @@ sudo make install
 
 This installs the binary to the path you defined by the configuration script, usually '/usr/local/bin'.
 
+### Installing udev rule on Linux
+```
+sudo cp 62-memsim2.rules /etc/udev/rules.d/
+```
+
+This installs an udev rule. Once you attach the EPROM emulator, a
+symbolic link '/dev/memsim2' will appear which points to the
+usual '/dev/ttyUSBn', with n being any digit starting at zero.
+
 
 ### Gain access rights to the simulator
 
