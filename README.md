@@ -1,4 +1,4 @@
-# memSIM2 for Linux
+# memSIM2
 This is a software tool to load memory images onto the memSIM2 EPROM emulator from http://momik.pl .
 
 MemSIM2 is an EPROM emulator. It emulates EPROMs from 2764 (8K/28 pin) to 27040 (4M/32 pin). This is accomplished by downloading your code with this tool.
@@ -17,7 +17,7 @@ make install
 memSIM -h
 ```
 
-Should build on Linux and most POSIX systems out of the box.
+Tested on Linux and GhobstBSD, which is based on FreeBSD. Should build on most POSIX systems out of the box.
 
 Installation
 ------------
@@ -488,7 +488,7 @@ When I ordered the memSIM2 device I didn't know that the sevice could come with 
 
 ```
 (16k)  2k x 8 EPROM (2716)
-                              TMS2516  TMS2716 
+                              TMS2516  TMS2716
 A7   1 +-v-+ 24  Vcc          +5       +5
 A6   2 |   | 23  A8           A8       A8
 A5   3 |   | 22  A9           A9       A9
@@ -506,7 +506,7 @@ GND 12 +---+ 13  D3
                                                                  TMM333
                                                                  TMS4732
 (32k)  4k x 8 EPROM (2732)                                       VT2332
-                              TMS2516  TMS2708  TMS2716  TMS2532 SY2332 
+                              TMS2516  TMS2708  TMS2716  TMS2532 SY2332
 A7   1 +-v-+ 24  Vcc          +5       +5       +5       +5      +5
 A6   2 |   | 23  A8           A8       A8       A8       A8      A8
 A5   3 |   | 22  A9           A9       A9       A9       A9      A9
@@ -522,7 +522,7 @@ GND 12 +---+ 13  D3
 
 (64k) 8k x 8 EPROM
      JEDEC 2764                    TMS2564
-Vpp  1 +-v-+ 28  Vcc         Vpp  1 +-v-+ 28 Vcc 
+Vpp  1 +-v-+ 28  Vcc         Vpp  1 +-v-+ 28 Vcc
 A12  2 |   | 27  /PGM        /CS1 2 |   | 27 /CS2
 A7   3 |   | 26  -           A7   3 |   | 26 Vcc
 A6   4 |   | 25  A8          A6   4 |   | 25 A8
@@ -644,7 +644,7 @@ A2  10 |   | 23  A10
 A1  11 |   | 22  /CE /PGM
 A0  12 |   | 21  D7
 D0  13 |   | 20  D6
-D1  14 |   | 19  D5 
+D1  14 |   | 19  D5
 D2  15 |   | 18  D4
 GND 16 +---+ 17  D3
 
@@ -655,8 +655,8 @@ I haven't tried this yet but I expect this will work.
 
 ```
       27C040                   64k x 8 EPROM               2k x 8 EPROM
-                    
-Vpp  1 +-v-+ 32  Vcc               27512                       2716                   TMS2516  TMS2716 
+
+Vpp  1 +-v-+ 32  Vcc               27512                       2716                   TMS2516  TMS2716
 A16  2 |   | 31  A18                                                                           DON'T USE
 A15  3 |   | 30  A17        A15  1 +-v-+ 28  Vcc  ........................  --+                THIS!
 A12  4 |   | 29  A14        A12  2 |   | 27  A14                              | Jumper
