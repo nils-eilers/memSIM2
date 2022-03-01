@@ -12,7 +12,11 @@
 #if defined(__FreeBSD__)
 #define DEFAULT_DEVICE "/dev/cuaU0"
 #else
+#if defined(__APPLE__) && defined(__MACH__)
+#define DEFAULT_DEVICE  "/dev/cu.usbserial-1"
+#else
 #error Please define DEFAULT_DEVICE for your operating system!
+#endif
 #endif
 #endif
 
