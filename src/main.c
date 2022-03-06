@@ -609,8 +609,9 @@ main(int argc, char *argv[])
    if (fd < 0) return EXIT_FAILURE;
 
    /* Configuration */
-   snprintf(emu_cmd, sizeof(emu_cmd), "MC%c%c%03d%c%c00023\r\n",
-         mem_type->cmd, reset_enable, reset_time, emu_enable, selftest);
+   snprintf(emu_cmd, sizeof(emu_cmd), "MC%c%c%03u%c%c00023\r\n",
+         mem_type->cmd, reset_enable, (uint8_t)reset_time, emu_enable, selftest);
+
    debug_printf("Config: %s\n", emu_cmd);
    res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1);
    if (res != sizeof(emu_cmd) - 1) {
