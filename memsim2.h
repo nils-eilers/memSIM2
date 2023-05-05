@@ -33,3 +33,7 @@ int get_hex2(FILE *file, int *check);               // 8 bit
 int get_hex4(FILE *file, int *check);               // 16 bit
 int get_hex6(FILE *file, int *check);               // 24 bit
 long long int get_hex8(FILE *file, int *check);     // 32 bit
+
+
+int parse_ihex(FILE *file, uint8_t *buffer, int *min, int *max, long offset);
+int parse_srec(FILE *file, uint8_t *buffer, int *min, int *max, long offset);

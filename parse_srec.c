@@ -6,7 +6,6 @@
 #include <stdint.h>
 
 #include "memsim2.h"
-#include "parse_srec.h"
 
 static const char* errmsg = "Error in S-Record file: ";
 

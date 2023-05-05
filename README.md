@@ -7,28 +7,17 @@ MemSIM2 is an EPROM emulator. It emulates EPROMs from 2764 (8K/28 pin) to 27040 
 
 **WARNING:** Take great care when using an adapter to simulate 2716 (2K) or 2732 (4K) ERPOMs (24 pin) some of the really odd chips put the voltages in different places or, worse yet, use voltages (+5, -5 and +12v) that will destroy the memSIM2. See the TMS2716 below as an example of an EPROM with triple voltages.
 
-# Build
+# Build and install
 ```
-autoreconf -i
-./configure
 make
-make install
-
-memSIM -h
-```
-
-Tested on Linux and GhostBSD, which is based on FreeBSD. Should build on most POSIX systems out of the box.
-
-Installation
-------------
-
-
-### Installing the binary
-```
 sudo make install
 ```
 
-This installs the binary to the path you defined by the configuration script, usually '/usr/local/bin'.
+The Makefile is written for GNU make. On some BSD systems, you'll have to
+call gmake instead of make to get a GNU make.
+Tested on Linux and GhostBSD, which is based on FreeBSD. Should build on most POSIX systems out of the box.
+
+The binary installs to the PREFIX path defined in the Makefile, usually '/usr/local/bin'.
 
 ### Installing udev rule on Linux
 ```
@@ -134,7 +123,7 @@ Similarly it is possible to also connect the 32 or 28 pin cable to a 24 pin sock
 MemSIM2 supports the Intel hex format and straight binary. Motorola S19 format is a work in progress.
 
 ```
-$ memSIM2 -h
+$ memsim2 -h
 Usage: [OPTION].. FILE
 Upload image file to memSIM2 EPROM emulator.  Where file can be .ihx or .bin.
 

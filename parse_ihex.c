@@ -6,7 +6,6 @@
 #include <stdint.h>
 
 #include "memsim2.h"
-#include "parse_ihex.h"
 
 static const char* errmsg = "Error in Intel hex file: ";
 

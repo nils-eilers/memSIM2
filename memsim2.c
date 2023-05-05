@@ -12,8 +12,6 @@
 #include <limits.h>
 #include <ctype.h>
 
-#include "parse_ihex.h"
-#include "parse_srec.h"
 #include "memsim2.h"
 
 #ifndef BOTHER
@@ -535,7 +533,11 @@ main(int argc, char *argv[])
 
    }
 
-   if (argc <= optind) return EXIT_SUCCESS;
+   if (argc < 2)
+   {
+      usage();
+      return EXIT_SUCCESS;
+   }
 
    res = read_image(argv[optind], mem, offset, &min, &max);
    if (res < 0)
