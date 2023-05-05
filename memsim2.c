@@ -217,23 +217,46 @@ read_image(const char *filename, uint8_t *mem, int offset, int *min, int *max)
    return detected_binary_size;
 }
 
+
+#define PBSTR "============================================================"
+#define PBWIDTH 57
+
+void
+print_progress(size_t position, size_t endpos)
+{
+   double percentage = (double) position / endpos;
+
+   int val = (int) (percentage * 100);
+   int lpad = (int) (percentage * PBWIDTH);
+   int rpad = PBWIDTH - lpad;
+   printf("\r%3d%% [%.*s%*s] %zu/%zu", val, lpad, PBSTR, rpad, "", position, endpos);
+   fflush(stdout);
+}
+
 static int
-write_all(int fd, const uint8_t *data, size_t count)
+write_all(int fd, const uint8_t *data, size_t count, int progress)
 {
    size_t full = count;
+   size_t portion = 512;
    int w;
+   size_t written = 0;
 
    while (count > 0)
    {
-      w = write(fd, data, count);
+      if (progress) print_progress(written, full);
+      portion = (count < 512) ? count : 512;
+      w = write(fd, data, portion);
       /* fprintf(stderr, "Wrote %d\n", w); */
       if (w < 0)
       {
+         printf("\n");
          return w;
       }
       data += w;
+      written += w;
       count -= w;
    }
+   if (progress) print_progress(written, full);
    return full;
 }
 
@@ -615,7 +638,7 @@ main(int argc, char *argv[])
          mem_type->cmd, reset_enable, (uint8_t)reset_time, emu_enable, selftest);
 
    debug_printf("Config: %s\n", emu_cmd);
-   res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1);
+   res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1, 0);
    if (res != sizeof(emu_cmd) - 1) {
       perror("Failed to write configuration");
    }
@@ -644,13 +667,13 @@ main(int argc, char *argv[])
 
    snprintf(emu_cmd, sizeof(emu_cmd), "MD%04d00000058\r\n",sim_size / 1024 % 1000);
    debug_printf("Data: %s\n", emu_cmd);
-   printf("Writing %d bytes to simulator...\n", sim_size);
-   res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1);
+   //printf("Writing %d bytes to simulator...\n", sim_size);
+   res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1, 0);
    if (res != sizeof(emu_cmd) - 1)
    {
       perror("Error: Failed to write data header");
    }
-   res = write_all(fd, mem, sim_size);
+   res = write_all(fd, mem, sim_size, 1);
    if (res < 0)
    {
       perror("Error: Failed to write data");
@@ -680,7 +703,7 @@ main(int argc, char *argv[])
       close(fd);
       return EXIT_FAILURE;
    }
-   printf("Done\n");
+   printf("\n");
 
    close(fd);
    return EXIT_SUCCESS;
