@@ -642,7 +642,7 @@ main(int argc, char *argv[])
 
    snprintf(emu_cmd, sizeof(emu_cmd), "MD%04d00000058\r\n",sim_size / 1024 % 1000);
    debug_printf("Data: %s\n", emu_cmd);
-   fprintf(stderr, "Writing %d bytes to simulator...\n", sim_size);
+   printf("Writing %d bytes to simulator...\n", sim_size);
    res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1);
    if (res != sizeof(emu_cmd) - 1)
    {
@@ -678,7 +678,7 @@ main(int argc, char *argv[])
       close(fd);
       return EXIT_FAILURE;
    }
-   fprintf(stderr, "Done\n");
+   printf("Done\n");
 
    close(fd);
    return EXIT_SUCCESS;
