@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <limits.h>
 #include <ctype.h>
+#include <dirent.h>
 
 #include "memsim2.h"
 
@@ -26,13 +27,15 @@
 bool mem_type_given = false;
 bool offset_given = false;
 static uint8_t mem[SIMMEMSIZE];
-
 #define MEM_TYPE_INDEX          2
 #define RESET_ENABLE_INDEX      3
 #define RESET_TIME_INDEX        4
 #define EMU_ENA_INDEX           7
 #define SELFTEST_INDEX          8
 #define CHKSUM_INDEX           12
+#define MAX_STR               256
+
+char device_name[MAX_STR];
 
 struct MemType
 {
@@ -52,6 +55,52 @@ const struct MemType memory_types[] =
    { "27040", '6', 512 * 1024 }
 };
 
+// **********
+// StrCaseStr
+// **********
+
+char *StrCaseStr(char *s1, const char *s2)
+{
+   char h1[MAX_STR];
+   char h2[MAX_STR];
+   char *r;
+   unsigned int i;
+
+   memset(h1,0,sizeof(h1));
+   memset(h2,0,sizeof(h2));
+
+    for (i=0 ; i < strlen(s1) && i < sizeof(h1)-1 ; ++i)
+        h1[i] = toupper(s1[i]);
+    for (i=0 ; i < strlen(s2) && i < sizeof(h2)-1 ; ++i)
+        h2[i] = toupper(s2[i]);
+
+    r = strstr(h1,h2);
+    if (r) r = s1 + (r - h1);
+    return r;
+}
+
+
+int detect_device(void)
+{
+   struct dirent *entry;
+   DIR *devdir = opendir("/dev");
+   if (!devdir) return 0;
+
+   do
+   {
+      entry = readdir(devdir);
+      if (entry && StrCaseStr(entry->d_name,"MEMSIM2"))
+      {
+          strcpy(device_name,"/dev/");
+          strcat(device_name,entry->d_name);
+          closedir(devdir);
+          return 1;
+      }
+   }  while (entry);
+
+   closedir(devdir);
+   return 0;
+}
 
 static int
 serial_open(const char *device)
@@ -626,6 +675,13 @@ main(int argc, char *argv[])
    }
 
    fd = serial_open(device == NULL ? UDEV_DEVICE : device);
+
+   if (fd < 0)
+   {
+      printf("Looking for MEMSIM2 device\n");
+      if (detect_device()) fd = serial_open(device_name);
+   }
+
    if (fd < 0)
    {
       printf("Trying default device: %s\n", DEFAULT_DEVICE);
