@@ -678,8 +678,14 @@ main(int argc, char *argv[])
 
    if (fd < 0)
    {
-      printf("Looking for MEMSIM2 device\n");
-      if (detect_device()) fd = serial_open(device_name);
+      printf("Looking for MEMSIM2 device");
+      if (detect_device())
+      {
+         fd = serial_open(device_name);
+         printf(": found %s\n", device_name);
+      } else {
+         printf(": not found\n");
+      }
    }
 
    if (fd < 0)
