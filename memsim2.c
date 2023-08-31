@@ -99,7 +99,7 @@ int detect_device(void)
    }  while (entry);
 
    closedir(devdir);
-   return 0;
+   return -1;
 }
 
 static int
