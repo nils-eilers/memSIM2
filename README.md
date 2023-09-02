@@ -129,10 +129,9 @@ Upload image file to memSIM2 EPROM emulator.  Where file can be .ihx or .bin.
 
 Options:
         -d DEVICE     Serial device
-        -m MEMTYPE    Memory type (2764 -8K, 27128 - 16K, 27256 - 32K, 27512 - 64K,
-                      27010 - 128K, 27020 - 256K, 27040 - 512K)
-                      2764-27512 are 28 Pin, 27010-27040 are 32 pin.
-                      defaults to 27512 (?)
+        -m MEMTYPE    Memory type (2716 -2K, 2732 -4K, 2764 -8K, 27128 - 16K, 27256 - 32K,
+                      27512 - 64K, 27010 - 128K, 27020 - 256K, 27040 - 512K)
+                      2716-2732 are 24 Pin, 2764-27512 are 28 Pin, 27010-27040 are 32 pin.
         -r RESETTIME  Time of reset pulse in milliseconds.
                       > 0 for positive pulse, < 0 for negative pulse
         -e            Enable emulation
@@ -419,6 +418,8 @@ data, it will issue a warning.
 
 | Name  | Size in kilobytes |
 |-------|-------------------|
+|  2716 |   2 KB            |
+|  2732 |   4 KB            |
 |  2764 |   8 KB            |
 | 27128 |  16 KB            |
 | 27256 |  32 KB            |
@@ -466,7 +467,7 @@ Basic parameters of the memSIM2 simulator
 | Feature | Description |
 | --- | --- |
 | RAM | 4Mbit (512KB) |
-| Simulated Memory | 2764 (8K), 27128 (16K), 27256 (32K), 27512 (64K), 27010 (128K), 27020 (256K), 27040 (512K) |
+| Simulated Memory | 2716 /2K), 2732 (4K), 2764 (8K), 27128 (16K), 27256 (32K), 27512 (64K), 27010 (128K), 27020 (256K), 27040 (512K) |
 | Access Time | 70 ns |
 | Supply voltage for EPROM | 2.7-5.0 V, the simulator output buffers automatically adapt to the memory supply voltage (device under test must supply Vcc for reference) |
 | PC transmission | min. 40 KB / s |

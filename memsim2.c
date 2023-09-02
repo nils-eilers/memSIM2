@@ -46,6 +46,8 @@ struct MemType
 
 const struct MemType memory_types[] =
 {
+   { "2716",  '0',   2 * 1024 },
+   { "2732",  '0',   4 * 1024 },
    { "2764",  '0',   8 * 1024 },
    { "27128", '1',  16 * 1024 },
    { "27256", '2',  32 * 1024 },
@@ -147,9 +149,9 @@ usage(void)
          "Upload image file to memSIM2 EPROM emulator\n\n"
          "Options:\n"
          "\t-d DEVICE     Serial device, defaults to " UDEV_DEVICE "\n"
-         "\t-m MEMTYPE    Memory type (2764 - 8K, 27128 - 16K, 27256 - 32K, 27512 - 64K,\n"
-         "\t              27010 - 128K, 27020 - 256K, 27040 - 512K)\n"
-         "\t              2764-27512 are 28 pin, 27010-27040 are 32 pin.\n"
+         "\t-m MEMTYPE    Memory type (2716 - 2K, 2732 - 4K, 2764 - 8K, 27128 - 16K, 27256 - 32K,\n"
+         "\t              27512 - 64K, 27010 - 128K, 27020 - 256K, 27040 - 512K)\n"
+         "\t              2716-2732 are 24 pin, 2764-27512 are 28 pin, 27010-27040 are 32 pin.\n"
          "\t              If no memory type is given, it is assumed by the image size.\n"
          "\t-r RESETTIME  Time of reset pulse in milliseconds.\n"
          "\t              > 0 for positive pulse, < 0 for negative pulse\n"
@@ -283,7 +285,7 @@ print_progress(size_t position, size_t endpos)
 }
 
 static int
-write_all(int fd, const uint8_t *data, size_t count, int progress)
+write_all(int fd, const uint8_t *data, size_t count, int progress, int divider)
 {
    size_t full = count;
    size_t portion = 512;
@@ -292,7 +294,7 @@ write_all(int fd, const uint8_t *data, size_t count, int progress)
 
    while (count > 0)
    {
-      if (progress) print_progress(written, full);
+      if (progress) print_progress(written/divider, full/divider);
       portion = (count < 512) ? count : 512;
       w = write(fd, data, portion);
       /* fprintf(stderr, "Wrote %d\n", w); */
@@ -305,7 +307,7 @@ write_all(int fd, const uint8_t *data, size_t count, int progress)
       written += w;
       count -= w;
    }
-   if (progress) print_progress(written, full);
+   if (progress) print_progress(written/divider, full/divider);
    return full;
 }
 
@@ -532,6 +534,7 @@ main(int argc, char *argv[])
    const struct MemType *mem_type = &memory_types[3];
    int detected_size = 0;
    int sim_size;
+   int divider; // Used to fake 2K or 4K progress bar when actually 8K are transmitted
    char emu_enable = 'D';
    char selftest = 'N';
    char *device = NULL;
@@ -700,7 +703,7 @@ main(int argc, char *argv[])
          mem_type->cmd, reset_enable, (uint8_t)reset_time, emu_enable, selftest);
 
    debug_printf("Config: %s\n", emu_cmd);
-   res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1, 0);
+   res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1, 0, 0);
    if (res != sizeof(emu_cmd) - 1) {
       perror("Failed to write configuration");
    }
@@ -726,16 +729,31 @@ main(int argc, char *argv[])
       return EXIT_FAILURE;
    }
 
-
+   divider = 1;
+   // Faking 8 KB chip from 2 KB data
+   if (sim_size == 2048)
+   {
+      memcpy(mem + 2048, mem, 2048);
+      memcpy(mem + 4096, mem, 4096);
+      sim_size = 8192;
+      divider = 4;
+   }
+   // Faking 8 KB chip from 4 KB data
+   if (sim_size == 4096)
+   {
+      memcpy(mem + 4096, mem, 4096);
+      sim_size = 8192;
+      divider = 2;
+   }
    snprintf(emu_cmd, sizeof(emu_cmd), "MD%04d00000058\r\n",sim_size / 1024 % 1000);
    debug_printf("Data: %s\n", emu_cmd);
    //printf("Writing %d bytes to simulator...\n", sim_size);
-   res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1, 0);
+   res = write_all(fd, (uint8_t*)emu_cmd, sizeof(emu_cmd) - 1, 0, 0);
    if (res != sizeof(emu_cmd) - 1)
    {
       perror("Error: Failed to write data header");
    }
-   res = write_all(fd, mem, sim_size, 1);
+   res = write_all(fd, mem, sim_size, 1, divider);
    if (res < 0)
    {
       perror("Error: Failed to write data");
